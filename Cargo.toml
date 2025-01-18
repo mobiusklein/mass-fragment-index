@@ -38,3 +38,5 @@ parquet ={ version = "52.2.0", features = ["zstd", "arrow"], optional = true}
 itertools = "0.13.0"
 rayon = { version = "1.10.0", optional = true}
 log = "0.4.22"
+
+soa_derive = { path = "../soa-derive/soa-derive/", features = ["generic_traits"] }

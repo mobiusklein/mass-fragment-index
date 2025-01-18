@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::ops::{Bound, Range, RangeBounds};
 use std::iter::IntoIterator;
 
 #[cfg(feature = "serde")]
@@ -50,6 +50,16 @@ impl From<(usize, usize)> for Interval {
 impl From<Interval> for (usize, usize) {
     fn from(value: Interval) -> Self {
         (value.start, value.end)
+    }
+}
+
+impl RangeBounds<usize> for Interval {
+    fn start_bound(&self) -> std::ops::Bound<&usize> {
+        Bound::Included(&self.start)
+    }
+
+    fn end_bound(&self) -> std::ops::Bound<&usize> {
+        Bound::Excluded(&self.end)
     }
 }
 

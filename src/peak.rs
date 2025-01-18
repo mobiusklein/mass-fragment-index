@@ -1,11 +1,14 @@
 #[cfg(feature = "serde")]
 use serde::{Serialize, Deserialize};
+use soa_derive::StructOfArray;
 
-use crate::sort::{IndexSortable, ParentID, MassType};
+use crate::sort::{IndexSortable, MassType, ParentID, SoAIndexSortable};
 
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[soa_derive(Debug, Clone)]
+#[generate_traits]
 pub struct DeconvolutedPeak {
     pub mass: MassType,
     pub charge: i16,
@@ -40,6 +43,29 @@ impl DeconvolutedPeak {
     }
 }
 
+impl<'t> IndexSortable for DeconvolutedPeakRef<'t> {
+    fn mass(&self) -> MassType {
+        *self.mass
+    }
+
+    fn parent_id(&self) -> ParentID {
+        *self.scan_ref
+    }
+}
+
+impl SoAIndexSortable<DeconvolutedPeak> for DeconvolutedPeakVec {
+    fn mass(&self) -> &[MassType] {
+        &self.mass
+    }
+
+    fn parent_id(&self) -> &[ParentID] {
+        &self.scan_ref
+    }
+
+    fn convert_ref(val_ref: Self::Ref<'_>) -> DeconvolutedPeak {
+        val_ref.to_owned()
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

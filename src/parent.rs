@@ -1,10 +1,13 @@
 #[cfg(feature = "serde")]
 use serde::{Serialize, Deserialize};
+use soa_derive::StructOfArray;
 
-use crate::sort::{IndexSortable, MassType, ParentID};
+use crate::sort::{IndexSortable, MassType, ParentID, SoAIndexSortable, SoAIndexSortableSlice};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[soa_derive(Debug, Clone)]
+#[generate_traits]
 pub struct ParentMolecule {
     pub mass: MassType,
     pub id: ParentID,
@@ -36,8 +39,10 @@ impl IndexSortable for ParentMolecule {
 }
 
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[soa_derive(Debug, Clone)]
+#[generate_traits]
 pub struct Peptide {
     pub mass: MassType,
     pub id: ParentID,
@@ -62,8 +67,10 @@ impl IndexSortable for Peptide {
 }
 
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[soa_derive(Debug, Clone)]
+#[generate_traits]
 pub struct Spectrum {
     pub precursor_mass: MassType,
     pub precursor_charge: i32,
@@ -97,5 +104,87 @@ impl IndexSortable for Spectrum {
 
     fn parent_id(&self) -> ParentID {
         self.source_file_id
+    }
+}
+
+impl<'t> IndexSortable for ParentMoleculeRef<'t> {
+    fn mass(&self) -> MassType {
+        *self.mass
+    }
+
+    fn parent_id(&self) -> ParentID {
+        *self.source_id
+    }
+}
+
+impl SoAIndexSortable<ParentMolecule> for ParentMoleculeVec {
+    fn mass(&self) -> &[MassType] {
+        &self.mass
+    }
+
+    fn parent_id(&self) -> &[ParentID] {
+        &self.source_id
+    }
+
+    fn convert_ref(val_ref: Self::Ref<'_>) -> ParentMolecule {
+        val_ref.to_owned()
+    }
+}
+
+impl<'t> IndexSortable for PeptideRef<'t> {
+    fn mass(&self) -> MassType {
+        *self.mass
+    }
+
+    fn parent_id(&self) -> ParentID {
+        *self.protein_id
+    }
+}
+
+impl SoAIndexSortable<Peptide> for PeptideVec {
+    fn mass(&self) -> &[MassType] {
+        &self.mass
+    }
+
+    fn parent_id(&self) -> &[ParentID] {
+        &self.protein_id
+    }
+
+    fn convert_ref(val_ref: Self::Ref<'_>) -> Peptide {
+        val_ref.to_owned()
+    }
+}
+
+impl<'t> IndexSortable for SpectrumRef<'t> {
+    fn mass(&self) -> MassType {
+        *self.precursor_mass
+    }
+
+    fn parent_id(&self) -> ParentID {
+        *self.source_file_id
+    }
+}
+
+impl SoAIndexSortable<Spectrum> for SpectrumVec {
+    fn mass(&self) -> &[MassType] {
+        &self.precursor_mass
+    }
+
+    fn parent_id(&self) -> &[ParentID] {
+        &self.source_file_id
+    }
+
+    fn convert_ref(val_ref: Self::Ref<'_>) -> Spectrum {
+        val_ref.to_owned()
+    }
+}
+
+impl<'t> SoAIndexSortableSlice<'t, Spectrum> for SpectrumSlice<'t> {
+    fn mass(&self) -> &[MassType] {
+        &self.precursor_mass
+    }
+
+    fn parent_id(&self) -> &[ParentID] {
+        &self.source_file_id
     }
 }

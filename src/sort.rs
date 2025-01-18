@@ -1,5 +1,9 @@
 use std::{
-    error::Error, fmt::Display, iter::FusedIterator, ops::{Index, Mul}, str::FromStr
+    error::Error,
+    fmt::Display,
+    iter::FusedIterator,
+    ops::{Index, Mul},
+    str::FromStr,
 };
 
 #[cfg(feature = "serde")]
@@ -406,6 +410,360 @@ impl<'a, T: IndexSortable> ParentSortedIndexBinSearchIter<'a, T> {
     }
 }
 
+mod soa_bin {
+    use std::{marker::PhantomData, ops::RangeBounds};
+
+    use soa_derive::prelude::*;
+
+    use super::*;
+
+    pub trait SoAIndexSortable<T: StructOfArray>: SoAVec<T>
+    where
+        for<'t> Self::Ref<'t>: IndexSortable,
+    {
+        fn mass(&self) -> &[MassType];
+
+        fn parent_id(&self) -> &[ParentID];
+
+        fn convert_ref(val_ref: Self::Ref<'_>) -> T;
+    }
+
+    pub trait SoAIndexSortableSlice<'a, T: StructOfArray>: SoASlice<T> + 'a
+    where
+        Self::Ref<'a>: IndexSortable
+    {
+        fn mass(&self) -> &[MassType];
+
+        fn parent_id(&self) -> &[ParentID];
+    }
+
+
+    #[derive(Debug, Clone)]
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+    pub struct SoAIndexBin<T: StructOfArray, V: SoAVec<T> + SoAIndexSortable<T>>
+    where
+        for<'t> V::Ref<'t>: IndexSortable,
+    {
+        entries: V,
+        pub(crate) sort_type: SortType,
+        pub(crate) min_mass: MassType,
+        pub(crate) max_mass: MassType,
+        _t: PhantomData<T>,
+    }
+
+    impl<T: StructOfArray, V: SoAVec<T> + SoAIndexSortable<T>> From<V> for SoAIndexBin<T, V>
+    where
+        for<'t> V::Ref<'t>: IndexSortable,
+    {
+        fn from(value: V) -> Self {
+            let mut this = Self::new(value, SortType::Unsorted, 0.0, 0.0);
+            (this.min_mass, this.max_mass) = this.find_min_max_masses();
+            this
+        }
+    }
+
+    impl<T: StructOfArray, V: SoAVec<T> + SoAIndexSortable<T>> Default for SoAIndexBin<T, V>
+    where
+        for<'t> V::Ref<'t>: IndexSortable,
+    {
+        fn default() -> Self {
+            Self {
+                entries: V::new(),
+                sort_type: SortType::Unsorted,
+                min_mass: Default::default(),
+                max_mass: Default::default(),
+                _t: Default::default(),
+            }
+        }
+    }
+
+    impl<T: StructOfArray, V: SoAVec<T> + SoAIndexSortable<T>> SoAIndexBin<T, V>
+    where
+        for<'t> V::Ref<'t>: IndexSortable,
+    {
+        pub fn new(
+            entries: V,
+            sort_type: SortType,
+            min_mass: MassType,
+            max_mass: MassType,
+        ) -> Self {
+            Self {
+                entries,
+                sort_type,
+                min_mass,
+                max_mass,
+                _t: PhantomData,
+            }
+        }
+
+        pub fn push(&mut self, entry: T) {
+            self.entries.push(entry);
+            self.sort_type = SortType::Unsorted;
+        }
+
+        pub fn find_min_max_masses(&self) -> (MassType, MassType) {
+            let mut min_mass = MassType::INFINITY;
+            let mut max_mass = 0.0 as MassType;
+
+            for f in self.entries.iter() {
+                if f.mass() < min_mass {
+                    min_mass = f.mass();
+                }
+                if f.mass() > max_mass {
+                    max_mass = f.mass();
+                }
+            }
+            return (min_mass, max_mass);
+        }
+
+        pub fn sort(&mut self, ordering: SortType) {
+            match ordering {
+                SortType::ByMass => {
+                    self.entries
+                        .sort_by(|a, b| a.mass().partial_cmp(&b.mass()).unwrap());
+                    if let Some(f) = self.entries.first() {
+                        self.min_mass = f.mass()
+                    }
+                    if let Some(f) = self.entries.last() {
+                        self.max_mass = f.mass()
+                    }
+                }
+                SortType::ByParentId => {
+                    self.entries
+                        .sort_by(|a, b| a.parent_id().cmp(&b.parent_id()));
+                    (self.min_mass, self.max_mass) = self.find_min_max_masses();
+                }
+                SortType::Unsorted => {
+                    (self.min_mass, self.max_mass) = self.find_min_max_masses();
+                }
+            }
+            self.sort_type = ordering;
+        }
+
+        pub fn assume_sorted(&mut self, sort_type: SortType) {
+            (self.min_mass, self.max_mass) = self.find_min_max_masses();
+            self.sort_type = sort_type;
+        }
+
+        pub fn len(&self) -> usize {
+            return self.entries.len();
+        }
+
+        pub fn is_empty(&self) -> bool {
+            self.entries.is_empty()
+        }
+
+        pub fn iter(&self) -> <V as SoAVec<T>>::Iter<'_> {
+            self.entries.iter()
+        }
+
+        #[allow(unused)]
+        pub(crate) fn iter_mut(&mut self) -> <V as SoAVec<T>>::IterMut<'_> {
+            self.entries.iter_mut()
+        }
+
+        pub fn as_slice(&self) -> <V as SoAVec<T>>::Slice<'_> {
+            self.entries.as_slice()
+        }
+
+        pub fn first(&self) -> Option<<V as SoAVec<T>>::Ref<'_>> {
+            self.entries.first()
+        }
+
+        pub fn get(&self, index: usize) -> Option<<V as SoAVec<T>>::Ref<'_>> {
+            self.entries.get(index)
+        }
+
+        pub fn last(&self) -> Option<<V as SoAVec<T>>::Ref<'_>> {
+            self.entries.last()
+        }
+
+        pub fn search_mass(&self, query: MassType, error_tolerance: Tolerance) -> Interval {
+            let (lower_bound, upper_bound) = error_tolerance.bounds(query);
+
+            let mut lower_i = self
+                .entries
+                .mass()
+                .partition_point(|entry| *entry <= lower_bound);
+            let mut upper_i = self.entries.mass()[lower_i..self.len()]
+                .partition_point(|entry| *entry <= upper_bound)
+                + lower_i;
+
+            while lower_i > 0 {
+                if error_tolerance.test(query, self.entries.mass()[lower_i - 1]) {
+                    lower_i -= 1;
+                } else {
+                    break;
+                }
+            }
+
+            while upper_i + 1 < self.len() {
+                if error_tolerance.test(query, self.entries.mass()[upper_i + 1]) {
+                    upper_i += 1;
+                } else {
+                    break;
+                }
+            }
+
+            return Interval::new(lower_i, upper_i);
+        }
+
+        pub fn search_parent_id(&self, parent_id_range: Interval) -> Interval {
+            let mut result = Interval::default();
+
+            let n = self.len();
+
+            let start = parent_id_range.start as ParentID;
+            let mut index = match self
+                .entries
+                .parent_id()
+                .binary_search_by(|e| (*e).cmp(&start))
+            {
+                Ok(found) => found,
+                Err(location) => location,
+            };
+
+            while index >= 1 && index < n {
+                if parent_id_range.contains(self.entries.parent_id()[index - 1] as usize) {
+                    index -= 1;
+                } else {
+                    break;
+                }
+            }
+            result.start = index;
+
+            let end = if parent_id_range.end > 0 {
+                parent_id_range.end - 1
+            } else {
+                0
+            } as ParentID;
+            index = match self
+                .entries
+                .parent_id()
+                .binary_search_by(|e| (*e).cmp(&end))
+            {
+                Ok(found) => found,
+                Err(location) => location,
+            };
+
+            while index + 1 < n {
+                if parent_id_range.contains(self.entries.parent_id()[index + 1] as usize) {
+                    index += 1;
+                } else {
+                    break;
+                }
+            }
+
+            result.end = Ord::min(index + 1, n);
+
+            result
+        }
+
+        pub fn select_parent_id(&self, parent_id_range: Interval) -> <V as SoAVec<T>>::Slice<'_> {
+            let idx = self.search_parent_id(parent_id_range);
+
+            let parent_ids = self.entries.parent_id();
+
+            let slc = Index::index(parent_ids, idx.start..idx.end);
+            let contained = slc.iter().all(|i| parent_id_range.contains(*i as usize));
+            assert!(contained, "{slc:?} {idx:?}");
+
+            let slc: <V as SoAVec<T>>::Slice<'_> = self.slice(idx);
+            return slc
+            // if slc.is_empty() {
+            //     return slc
+            // }
+            // return slc
+        }
+
+        pub fn min_mass(&self) -> f32 {
+            self.min_mass
+        }
+
+        pub fn max_mass(&self) -> f32 {
+            self.max_mass
+        }
+
+        pub fn sort_type(&self) -> SortType {
+            self.sort_type
+        }
+
+        pub fn slice(&self, index: impl RangeBounds<usize>) -> <V as SoAVec<T>>::Slice<'_> {
+            self.entries.slice(index)
+        }
+
+        pub fn entries(&self) -> &V {
+            &self.entries
+        }
+    }
+
+    pub struct SoAParentSortedIndexBinSearchIter<
+        'a,
+        T: StructOfArray,
+        V: SoAVec<T> + SoAIndexSortable<T> + 'a,
+    >
+    where
+        for<'t> V::Ref<'t>: IndexSortable,
+    {
+        bin_iter: V::Iter<'a>,
+        parent_range: Interval,
+        query: f32,
+        error_tolerance: Tolerance,
+        spanned: bool,
+    }
+
+    impl<'a, T: StructOfArray, V: SoAVec<T> + SoAIndexSortable<T> + 'a> Iterator
+        for SoAParentSortedIndexBinSearchIter<'a, T, V>
+    where
+        for<'t> V::Ref<'t>: IndexSortable,
+    {
+        type Item = V::Ref<'a>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.next_entry()
+        }
+    }
+
+    impl<'a, T: StructOfArray, V: SoAVec<T> + SoAIndexSortable<T> + 'a>
+        SoAParentSortedIndexBinSearchIter<'a, T, V>
+    where
+        for<'t> V::Ref<'t>: IndexSortable,
+    {
+        pub fn new(
+            bin: &'a SoAIndexBin<T, V>,
+            parent_range: Interval,
+            query: f32,
+            error_tolerance: Tolerance,
+        ) -> Self {
+            let bin_iter = bin.iter();
+            let (lo, hi) = error_tolerance.bounds(query);
+            let spanned = lo <= bin.min_mass() && hi >= bin.max_mass();
+            Self {
+                bin_iter,
+                parent_range,
+                query,
+                error_tolerance,
+                spanned,
+            }
+        }
+
+        pub fn next_entry(&mut self) -> Option<V::Ref<'a>> {
+            while let Some(t) = self.bin_iter.next() {
+                if self.spanned && self.parent_range.contains(t.parent_id() as usize) {
+                    return Some(t);
+                }
+                if self.error_tolerance.test(self.query, t.mass())
+                    && self.parent_range.contains(t.parent_id() as usize)
+                {
+                    return Some(t);
+                }
+            }
+            None
+        }
+    }
+}
+
+pub use soa_bin::{SoAIndexBin, SoAIndexSortable, SoAIndexSortableSlice, SoAParentSortedIndexBinSearchIter};
 
 #[cfg(test)]
 mod test {

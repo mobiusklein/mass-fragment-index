@@ -2,9 +2,9 @@ use std::{str::FromStr, error::Error, fmt::Display};
 
 #[cfg(feature = "serde")]
 use serde::{Serialize, Deserialize};
+use soa_derive::prelude::*;
 
-
-use crate::sort::{IndexSortable, ParentID, MassType};
+use crate::sort::{IndexSortable, MassType, ParentID, SoAIndexSortable};
 
 #[allow(non_snake_case, non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -119,17 +119,16 @@ impl FromStr for FragmentName {
     }
 }
 
-
-
-
 impl Default for FragmentSeries {
     fn default() -> Self {
         Self::Unknown
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[soa_derive(Debug, Clone)]
+#[generate_traits]
 pub struct Fragment {
     pub mass: MassType,
     pub parent_id: ParentID,
@@ -156,5 +155,30 @@ impl Fragment {
             series,
             ordinal,
         }
+    }
+}
+
+
+impl<'t> IndexSortable for FragmentRef<'t> {
+    fn mass(&self) -> MassType {
+        *self.mass
+    }
+
+    fn parent_id(&self) -> ParentID {
+        *self.parent_id
+    }
+}
+
+impl SoAIndexSortable<Fragment> for FragmentVec {
+    fn mass(&self) -> &[MassType] {
+        &self.mass
+    }
+
+    fn parent_id(&self) -> &[ParentID] {
+        &self.parent_id
+    }
+
+    fn convert_ref(val_ref: Self::Ref<'_>) -> Fragment {
+        val_ref.to_owned()
     }
 }
