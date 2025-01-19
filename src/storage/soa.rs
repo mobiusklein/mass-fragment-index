@@ -559,11 +559,11 @@ where
 
         for j in band_indices {
             let band: &mut SplitBand = self.bands.get_mut(j).unwrap();
-            // log::debug!(
-            //     "Writing band {j}: {:0.2}-{:0.2}",
-            //     band.start_mass,
-            //     band.end_mass
-            // );
+            log::debug!(
+                "Writing band {j}: {:0.2}-{:0.2}",
+                band.start_mass,
+                band.end_mass
+            );
             let interval = Interval::new(band.start_id as usize, band.end_id as usize + 1);
             // log::debug!("Indices: {interval:?}");
             band.file_name = Some(archive_name.clone());
@@ -574,10 +574,11 @@ where
                 let entries_of: <TV as SoAVec<T>>::Slice<'_> = SoAIndexBin::select_parent_id(bin, interval);
 
                 let n_entries_of = entries_of.len();
-                log::debug!("Band {j} Bin {i} Count {n_entries_of}");
+
                 if n_entries_of == 0 {
                     continue;
                 }
+                // log::debug!("Band {j} Bin {i} Count {n_entries_of}");
                 bin_counts[i as usize] += n_entries_of;
 
                 let batch = T::to_batch_soa(entries_of, entries_schema.clone(), i as u64);

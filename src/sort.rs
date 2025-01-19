@@ -610,70 +610,36 @@ mod soa_bin {
 
         pub fn search_parent_id(&self, parent_id_range: Interval) -> Interval {
             let mut result = Interval::default();
-
-            let n = self.len();
-
-            let start = parent_id_range.start as ParentID;
-            let mut index = match self
-                .entries
-                .parent_id()
-                .binary_search_by(|e| (*e).cmp(&start))
-            {
-                Ok(found) => found,
-                Err(location) => location,
-            };
-
-            while index >= 1 && index < n {
-                if parent_id_range.contains(self.entries.parent_id()[index - 1] as usize) {
-                    index -= 1;
-                } else {
-                    break;
-                }
+            if self.is_empty() {
+                return result
             }
-            result.start = index;
+            let parent_ids = self.entries.parent_id();
+            let start_idx = parent_ids.partition_point(|i| {
+                parent_id_range.start > *i as usize
+            });
 
-            let end = if parent_id_range.end > 0 {
-                parent_id_range.end - 1
-            } else {
-                0
-            } as ParentID;
-            index = match self
-                .entries
-                .parent_id()
-                .binary_search_by(|e| (*e).cmp(&end))
-            {
-                Ok(found) => found,
-                Err(location) => location,
-            };
-
-            while index + 1 < n {
-                if parent_id_range.contains(self.entries.parent_id()[index + 1] as usize) {
-                    index += 1;
-                } else {
-                    break;
-                }
-            }
-
-            result.end = Ord::min(index + 1, n);
-
+            let end_idx = parent_ids.partition_point(|i| {
+                parent_id_range.end > *i as usize
+            });
+            result.start = start_idx;
+            result.end = end_idx;
             result
         }
 
         pub fn select_parent_id(&self, parent_id_range: Interval) -> <V as SoAVec<T>>::Slice<'_> {
+            if self.is_empty() {
+                return self.as_slice()
+            }
+
             let idx = self.search_parent_id(parent_id_range);
 
-            let parent_ids = self.entries.parent_id();
-
-            let slc = Index::index(parent_ids, idx.start..idx.end);
-            let contained = slc.iter().all(|i| parent_id_range.contains(*i as usize));
-            assert!(contained, "{slc:?} {idx:?}");
+            // let parent_ids = self.entries.parent_id();
+            // let slc = Index::index(parent_ids, idx.start..idx.end);
+            // let contained = slc.iter().all(|i| parent_id_range.contains(*i as usize));
+            // debug_assert!(contained, "{slc:?} {idx:?} {parent_id_range:?}");
 
             let slc: <V as SoAVec<T>>::Slice<'_> = self.slice(idx);
             return slc
-            // if slc.is_empty() {
-            //     return slc
-            // }
-            // return slc
         }
 
         pub fn min_mass(&self) -> f32 {
