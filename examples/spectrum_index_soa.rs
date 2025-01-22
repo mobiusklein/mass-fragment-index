@@ -9,18 +9,15 @@ use mass_fragment_index::{
 fn main() -> io::Result<()> {
     pretty_env_logger::init_timed();
 
-    // let mut args = env::args().skip(1);
+    let mut args = env::args().skip(1);
 
-    // let mzml_path = args
-    //     .next()
-    //     .unwrap_or_else(|| panic!("Please provide a path to an mzML file"));
+    let mzml_path = args
+        .next()
+        .unwrap_or_else(|| panic!("Please provide a path to an mzML file"));
 
-    // let storage_dir: PathBuf = args
-    //     .next()
-    //     .unwrap_or_else(|| panic!("Please provide a path to write index to")).into();
-
-    let mzml_path = PathBuf::from(r#"E:\Data\Test\MouseBrain-Z-T-1.deconv.1.mzML"#);
-    let storage_dir = PathBuf::from("tmp_soa");
+    let storage_dir: PathBuf = args
+        .next()
+        .unwrap_or_else(|| panic!("Please provide a path to write index to")).into();
 
     if !storage_dir.exists() {
         std::fs::DirBuilder::new().recursive(true).create(&storage_dir)?;
@@ -98,7 +95,7 @@ fn main() -> io::Result<()> {
 
     eprintln!("Loading index from disk: {}", storage_dir.display());
 
-    let duplicate: SoASearchIndex<DeconvolutedPeak, _, Spectrum, _> = SoASearchIndex::read_banded_parquet(&storage_dir)?;
+    let duplicate: SoASearchIndex<DeconvolutedPeak, Spectrum> = SoASearchIndex::read_banded_parquet(&storage_dir)?;
 
     eprintln!("Original index: {} precursors. Loaded index: {} precursors", index.parents.len(), duplicate.parents.len());
     for (p1, p2) in index.parents.iter().zip(duplicate.parents.iter()) {

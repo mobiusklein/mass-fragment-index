@@ -9,7 +9,8 @@ use std::{
 
 use arrow::{
     array::{
-        ArrayRef, AsArray, Float32Array, Int16Array, Int32Array, RecordBatch, StringArray, StringDictionaryBuilder, StructArray, UInt16Array, UInt32Array, UInt64Array
+        ArrayRef, AsArray, Float32Array, Int16Array, Int32Array, RecordBatch, StringArray,
+        StringDictionaryBuilder, StructArray, UInt16Array, UInt32Array, UInt64Array,
     },
     datatypes::{SchemaRef, UInt8Type},
     json::{LineDelimitedWriter, ReaderBuilder},
@@ -38,7 +39,9 @@ macro_rules! col_to_vec {
     }};
 }
 
-pub trait SoAArrowStorage<V: SoAVec<Self> + SoAAppendVec<Self>> : ArrowStorage + StructOfArray {
+pub trait SoAArrowStorage<V: SoAVec<Self> + SoAAppendVec<Self>>:
+    ArrowStorage + StructOfArray
+{
     fn to_batch_soa<'a>(
         batch: <V as SoAVec<Self>>::Slice<'a>,
         schema: SchemaRef,
@@ -93,8 +96,8 @@ pub trait SoAArrowStorage<V: SoAVec<Self> + SoAAppendVec<Self>> : ArrowStorage +
 pub trait SoAIndexBinaryStorage<
     'a,
     T: SoAArrowStorage<TV> + 'a,
-    TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
     P: SoAArrowStorage<PV>,
+    TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
     PV: SoAVec<P> + SoAIndexSortable<P> + SoAAppendVec<P>,
     M: ArrowStorage,
 > where
@@ -103,7 +106,10 @@ pub trait SoAIndexBinaryStorage<
 {
     fn parents(&self) -> &PV;
 
-    fn iter_entries<'b>(&'b self) -> impl Iterator<Item = &'b SoAIndexBin<T, TV>> where T: 'b, TV: 'b;
+    fn iter_entries<'b>(&'b self) -> impl Iterator<Item = &'b SoAIndexBin<T, TV>>
+    where
+        T: 'b,
+        TV: 'b;
 
     fn to_metadata(&self) -> M;
 
@@ -221,8 +227,7 @@ pub trait SoAIndexBinaryStorage<
 
             for batch in reader {
                 let (entries, segments) = T::from_batch_soa(&batch.unwrap(), entry_schema.clone());
-                let mut parts: HashMap<u64, TV> =
-                    T::partition_by_segments(entries, segments);
+                let mut parts: HashMap<u64, TV> = T::partition_by_segments(entries, segments);
                 for (k, v) in parts.iter_mut() {
                     bin_collector
                         .entry(*k)
@@ -288,7 +293,6 @@ impl SoAArrowStorage<PeptideVec> for Peptide {
 }
 
 impl SoAArrowStorage<FragmentVec> for Fragment {
-
     fn to_batch_soa<'a>(
         batch: <FragmentVec as soa_derive::SoAVec<Fragment>>::Slice<'a>,
         schema: SchemaRef,
@@ -415,11 +419,11 @@ impl SoAArrowStorage<DeconvolutedPeakVec> for DeconvolutedPeak {
 pub struct SoASplitIndexBinaryStorageWriter<
     'a,
     T: ArrowStorage + 'a + IndexSortable + Clone + SplitArrowStorage + SoAArrowStorage<TV>,
-    TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
     P: ArrowStorage + IndexSortable + SoAArrowStorage<PV>,
+    TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
     PV: SoAVec<P> + SoAIndexSortable<P> + SoAAppendVec<P>,
     M: ArrowStorage,
-    I: SoASplitIndexBinaryStorage<'a, T, TV, P, PV, M>,
+    I: SoASplitIndexBinaryStorage<'a, T, P, TV, PV, M>,
 > where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
@@ -437,12 +441,12 @@ pub struct SoASplitIndexBinaryStorageWriter<
 impl<
         'a,
         T: ArrowStorage + 'a + IndexSortable + Clone + SplitArrowStorage + SoAArrowStorage<TV>,
-        TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
         P: ArrowStorage + IndexSortable + SoAArrowStorage<PV>,
+        TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
         PV: SoAVec<P> + SoAIndexSortable<P> + SoAAppendVec<P>,
         M: ArrowStorage,
-        I: SoASplitIndexBinaryStorage<'a, T, TV, P, PV, M>,
-    > SoASplitIndexBinaryStorageWriter<'a, T, TV, P, PV, M, I>
+        I: SoASplitIndexBinaryStorage<'a, T, P, TV, PV, M>,
+    > SoASplitIndexBinaryStorageWriter<'a, T, P, TV, PV, M, I>
 where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
@@ -469,7 +473,7 @@ where
             }
             BinStorageStrategy::NEntriesPerFile(_) => {
                 // self.write_n_entries_per_file(directory, compression_level)
-                todo!()
+                unimplemented!("This orientation is not implemented for SoA indices, due to the added complexity of SoA types")
             }
         }
     }
@@ -537,7 +541,7 @@ where
         let entries_schema = T::schema();
         let props = T::writer_properties()
             .set_compression(compression_level.clone())
-            // .set_column_encoding("band_id".into(), parquet::basic::Encoding::RLE)
+            .set_column_encoding("band_id".into(), parquet::basic::Encoding::RLE)
             .set_writer_version(parquet::file::properties::WriterVersion::PARQUET_2_0)
             .set_statistics_enabled(parquet::file::properties::EnabledStatistics::Page)
             .build();
@@ -565,13 +569,13 @@ where
                 band.end_mass
             );
             let interval = Interval::new(band.start_id as usize, band.end_id as usize + 1);
-            // log::debug!("Indices: {interval:?}");
             band.file_name = Some(archive_name.clone());
 
-            for (i, bin ) in self.index.iter_entries().enumerate() {
+            for (i, bin) in self.index.iter_entries().enumerate() {
                 // let idx = SoAIndexBin::search_parent_id(bin, interval);
                 // let entries_of: <TV as SoAVec<T>>::Slice<'_> = SoAIndexBin::slice(bin, idx);
-                let entries_of: <TV as SoAVec<T>>::Slice<'_> = SoAIndexBin::select_parent_id(bin, interval);
+                let entries_of: <TV as SoAVec<T>>::Slice<'_> =
+                    SoAIndexBin::select_parent_id(bin, interval);
 
                 let n_entries_of = entries_of.len();
 
@@ -590,7 +594,7 @@ where
                 writer.write(&batch)?;
             }
         }
-        log::debug!("{} items in bins", bin_counts[11904]);
+
         writer.close()?;
         Ok(())
     }
@@ -599,11 +603,11 @@ where
 pub trait SoASplitIndexBinaryStorage<
     'a,
     T: ArrowStorage + 'a + IndexSortable + Clone + SplitArrowStorage + SoAArrowStorage<TV>,
-    TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
     P: ArrowStorage + IndexSortable + SoAArrowStorage<PV>,
+    TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
     PV: SoAVec<P> + SoAIndexSortable<P> + SoAAppendVec<P>,
     M: ArrowStorage,
->: SoAIndexBinaryStorage<'a, T, TV, P, PV, M> + Sized where
+>: SoAIndexBinaryStorage<'a, T, P, TV, PV, M> + Sized where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
 {

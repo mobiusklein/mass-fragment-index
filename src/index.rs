@@ -398,9 +398,9 @@ impl<'a, T: IndexSortable + Default, P: IndexSortable + Default> SearchIndexSear
 #[derive(Default)]
 pub struct SoASearchIndex<
     T: IndexSortable + Default + StructOfArray,
-    TV: SoAVec<T> + SoAIndexSortable<T>,
     P: IndexSortable + Default + StructOfArray,
-    PV: SoAVec<P> + SoAIndexSortable<P>,
+    TV: SoAVec<T> + SoAIndexSortable<T> = <T as StructOfArray>::Type,
+    PV: SoAVec<P> + SoAIndexSortable<P> = <P as StructOfArray>::Type,
 > where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
@@ -423,10 +423,10 @@ mod soa_storage {
     impl<
             'a,
             T: IndexSortable + Default + StructOfArray + SoAArrowStorage<TV> + 'a,
-            TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
             P: IndexSortable + Default + StructOfArray + SoAArrowStorage<PV> + 'a,
+            TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
             PV: SoAVec<P> + SoAIndexSortable<P> + SoAAppendVec<P>,
-        > SoAIndexBinaryStorage<'a, T, TV, P, PV, IndexMetadata> for SoASearchIndex<T, TV, P, PV>
+        > SoAIndexBinaryStorage<'a, T, P, TV, PV, IndexMetadata> for SoASearchIndex<T, P, TV, PV>
     where
         for<'t> TV::Ref<'t>: IndexSortable,
         for<'t> PV::Ref<'t>: IndexSortable,
@@ -471,14 +471,14 @@ mod soa_storage {
     impl<
             'a,
             T: IndexSortable + Default + StructOfArray + SoAArrowStorage<TV> + 'a,
-            TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
             P: IndexSortable + Default + StructOfArray + SoAArrowStorage<PV> + 'a,
+            TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
             PV: SoAVec<P> + SoAIndexSortable<P> + SoAAppendVec<P>,
-        > SoASearchIndex<T, TV, P, PV>
+        > SoASearchIndex<T, P, TV, PV>
     where
         for<'t> TV::Ref<'t>: IndexSortable,
         for<'t> PV::Ref<'t>: IndexSortable,
-        SoASearchIndex<T, TV, P, PV>: SoAIndexBinaryStorage<'a, T, TV, P, PV, IndexMetadata>,
+        SoASearchIndex<T, P, TV, PV>: SoAIndexBinaryStorage<'a, T, P, TV, PV, IndexMetadata>,
     {
         pub fn write_parquet<D: AsRef<std::path::Path>>(
             &'a self,
@@ -505,8 +505,8 @@ mod soa_storage {
             TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
             P: IndexSortable + Default + StructOfArray + SoAArrowStorage<PV> + 'a,
             PV: SoAVec<P> + SoAIndexSortable<P> + SoAAppendVec<P>,
-        > SoASplitIndexBinaryStorage<'a, T, TV, P, PV, IndexMetadata>
-        for SoASearchIndex<T, TV, P, PV>
+        > SoASplitIndexBinaryStorage<'a, T, P, TV, PV, IndexMetadata>
+        for SoASearchIndex<T, P, TV, PV>
     where
         for<'t> TV::Ref<'t>: IndexSortable,
         for<'t> PV::Ref<'t>: IndexSortable,
@@ -525,11 +525,11 @@ mod soa_storage {
             TV: SoAVec<T> + SoAIndexSortable<T> + SoAAppendVec<T>,
             P: IndexSortable + Default + StructOfArray + SoAArrowStorage<PV> + 'a,
             PV: SoAVec<P> + SoAIndexSortable<P> + SoAAppendVec<P>,
-        > SoASearchIndex<T, TV, P, PV>
+        > SoASearchIndex<T, P, TV, PV>
     where
         for<'t> TV::Ref<'t>: IndexSortable,
         for<'t> PV::Ref<'t>: IndexSortable,
-        Self: SoASplitIndexBinaryStorage<'a, T, TV, P, PV, IndexMetadata>,
+        Self: SoASplitIndexBinaryStorage<'a, T, P, TV, PV, IndexMetadata>,
     {
         pub fn write_banded_parquet<D: AsRef<std::path::Path>>(
             &'a self,
@@ -548,10 +548,10 @@ mod soa_storage {
 
 impl<
         T: IndexSortable + Default + StructOfArray,
-        TV: SoAVec<T> + SoAIndexSortable<T>,
         P: IndexSortable + Default + StructOfArray,
+        TV: SoAVec<T> + SoAIndexSortable<T>,
         PV: SoAVec<P> + SoAIndexSortable<P>,
-    > SoASearchIndex<T, TV, P, PV>
+    > SoASearchIndex<T, P, TV, PV>
 where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
@@ -619,7 +619,7 @@ where
         query: MassType,
         error_tolerance: Tolerance,
         parent_interval: Option<Interval>,
-    ) -> SoASearchIndexSearchIter<'_, T, TV, P, PV> {
+    ) -> SoASearchIndexSearchIter<'_, T, P, TV, PV> {
         SoASearchIndexSearchIter::new(
             self,
             query,
@@ -632,14 +632,14 @@ where
 pub struct SoASearchIndexBinIter<
     'a,
     T: IndexSortable + Default + StructOfArray,
-    TV: SoAVec<T> + SoAIndexSortable<T>,
     P: IndexSortable + Default + StructOfArray,
-    PV: SoAVec<P> + SoAIndexSortable<P>,
+    TV: SoAVec<T> + SoAIndexSortable<T> = <T as StructOfArray>::Type,
+    PV: SoAVec<P> + SoAIndexSortable<P> = <P as StructOfArray>::Type,
 > where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
 {
-    index: &'a SoASearchIndex<T, TV, P, PV>,
+    index: &'a SoASearchIndex<T, P, TV, PV>,
     pub query: MassType,
     pub error_tolerance: Tolerance,
     pub low_bin: usize,
@@ -650,10 +650,10 @@ pub struct SoASearchIndexBinIter<
 impl<
         'a,
         T: IndexSortable + Default + StructOfArray,
-        TV: SoAVec<T> + SoAIndexSortable<T>,
         P: IndexSortable + Default + StructOfArray,
+        TV: SoAVec<T> + SoAIndexSortable<T>,
         PV: SoAVec<P> + SoAIndexSortable<P>,
-    > Iterator for SoASearchIndexBinIter<'a, T, TV, P, PV>
+    > Iterator for SoASearchIndexBinIter<'a, T, P, TV, PV>
 where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
@@ -668,16 +668,16 @@ where
 impl<
         'a,
         T: IndexSortable + Default + StructOfArray,
-        TV: SoAVec<T> + SoAIndexSortable<T>,
         P: IndexSortable + Default + StructOfArray,
+        TV: SoAVec<T> + SoAIndexSortable<T>,
         PV: SoAVec<P> + SoAIndexSortable<P>,
-    > SoASearchIndexBinIter<'a, T, TV, P, PV>
+    > SoASearchIndexBinIter<'a, T, P, TV, PV>
 where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
 {
     pub fn new(
-        index: &'a SoASearchIndex<T, TV, P, PV>,
+        index: &'a SoASearchIndex<T, P, TV, PV>,
         query: MassType,
         error_tolerance: Tolerance,
     ) -> Self {
@@ -711,9 +711,9 @@ where
 pub struct SoASearchIndexSearchIter<
     'a,
     T: IndexSortable + Default + StructOfArray,
-    TV: SoAVec<T> + SoAIndexSortable<T>,
     P: IndexSortable + Default + StructOfArray,
-    PV: SoAVec<P> + SoAIndexSortable<P>,
+    TV: SoAVec<T> + SoAIndexSortable<T> = <T as StructOfArray>::Type,
+    PV: SoAVec<P> + SoAIndexSortable<P> = <P as StructOfArray>::Type,
 > where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
@@ -721,17 +721,17 @@ pub struct SoASearchIndexSearchIter<
     pub query: MassType,
     pub error_tolerance: Tolerance,
     pub parent_range: Interval,
-    bin_iter: SoASearchIndexBinIter<'a, T, TV, P, PV>,
+    bin_iter: SoASearchIndexBinIter<'a, T, P, TV, PV>,
     item_iter: Option<SoAParentSortedIndexBinSearchIter<'a, T, TV>>,
 }
 
 impl<
         'a,
         T: IndexSortable + Default + StructOfArray,
-        TV: SoAVec<T> + SoAIndexSortable<T>,
         P: IndexSortable + Default + StructOfArray,
+        TV: SoAVec<T> + SoAIndexSortable<T>,
         PV: SoAVec<P> + SoAIndexSortable<P>,
-    > Iterator for SoASearchIndexSearchIter<'a, T, TV, P, PV>
+    > Iterator for SoASearchIndexSearchIter<'a, T, P, TV, PV>
 where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
@@ -746,16 +746,16 @@ where
 impl<
         'a,
         T: IndexSortable + Default + StructOfArray,
-        TV: SoAVec<T> + SoAIndexSortable<T>,
         P: IndexSortable + Default + StructOfArray,
+        TV: SoAVec<T> + SoAIndexSortable<T>,
         PV: SoAVec<P> + SoAIndexSortable<P>,
-    > SoASearchIndexSearchIter<'a, T, TV, P, PV>
+    > SoASearchIndexSearchIter<'a, T, P, TV, PV>
 where
     for<'t> TV::Ref<'t>: IndexSortable,
     for<'t> PV::Ref<'t>: IndexSortable,
 {
     pub fn new(
-        index: &'a SoASearchIndex<T, TV, P, PV>,
+        index: &'a SoASearchIndex<T, P, TV, PV>,
         query: MassType,
         error_tolerance: Tolerance,
         parent_range: Interval,
@@ -803,7 +803,7 @@ where
 mod test {
     use super::*;
     use crate::parent::{Spectrum, SpectrumVec};
-    use crate::peak::{DeconvolutedPeak, DeconvolutedPeakVec};
+    use crate::peak::DeconvolutedPeak;
 
     #[test]
     fn test_build() {
@@ -853,9 +853,7 @@ mod test {
         ];
         let mut index: SoASearchIndex<
             DeconvolutedPeak,
-            DeconvolutedPeakVec,
             Spectrum,
-            SpectrumVec,
         > = SoASearchIndex::empty(10, 1000.0);
         for peak in peaks {
             index.add(peak);

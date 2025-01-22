@@ -271,41 +271,18 @@ impl<T: IndexSortable> IndexBin<T> {
 
     pub fn search_parent_id(&self, parent_id_range: Interval) -> Interval {
         let mut result = Interval::default();
-
-        let start = parent_id_range.start as ParentID;
-        let mut index = match self.entries.binary_search_by(|e| e.parent_id().cmp(&start)) {
-            Ok(found) => found,
-            Err(location) => location,
-        };
-
-        while index >= 1 && index < self.len() {
-            if parent_id_range.contains(self.entries[index - 1].parent_id() as usize) {
-                index -= 1;
-            } else {
-                break;
-            }
+        if self.is_empty() {
+            return result
         }
-        result.start = index;
+        let start_idx = self.entries.partition_point(|i| {
+            parent_id_range.start > i.parent_id() as usize
+        });
 
-        let end = if parent_id_range.end > 0 {
-            parent_id_range.end - 1
-        } else {
-            0
-        } as ParentID;
-        index = match self.entries.binary_search_by(|e| e.parent_id().cmp(&end)) {
-            Ok(found) => found,
-            Err(location) => location,
-        };
-
-        while index + 1 < self.len() {
-            if parent_id_range.contains(self.entries[index + 1].parent_id() as usize) {
-                index += 1;
-            } else {
-                break;
-            }
-        }
-        result.end = index;
-
+        let end_idx = self.entries.partition_point(|i| {
+            parent_id_range.end > i.parent_id() as usize
+        });
+        result.start = start_idx;
+        result.end = end_idx;
         result
     }
 
@@ -440,7 +417,7 @@ mod soa_bin {
 
     #[derive(Debug, Clone)]
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    pub struct SoAIndexBin<T: StructOfArray, V: SoAVec<T> + SoAIndexSortable<T>>
+    pub struct SoAIndexBin<T: StructOfArray, V: SoAVec<T> + SoAIndexSortable<T> = <T as StructOfArray>::Type>
     where
         for<'t> V::Ref<'t>: IndexSortable,
     {

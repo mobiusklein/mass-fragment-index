@@ -1,9 +1,8 @@
 #[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use soa_derive::StructOfArray;
 
-use crate::sort::{IndexSortable, MassType, ParentID, SoAIndexSortable};
-
+use crate::sort::{MassType, ParentID};
 
 #[derive(Debug, Clone, Copy, PartialEq, Default, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -14,16 +13,6 @@ pub struct DeconvolutedPeak {
     pub charge: i16,
     pub intensity: f32,
     pub scan_ref: ParentID,
-}
-
-impl IndexSortable for DeconvolutedPeak {
-    fn mass(&self) -> MassType {
-        self.mass
-    }
-
-    fn parent_id(&self) -> ParentID {
-        self.scan_ref
-    }
 }
 
 impl PartialOrd for DeconvolutedPeak {
@@ -43,46 +32,22 @@ impl DeconvolutedPeak {
     }
 }
 
-impl<'t> IndexSortable for DeconvolutedPeakRef<'t> {
-    fn mass(&self) -> MassType {
-        *self.mass
-    }
+crate::generate_index_sortable!(
+    DeconvolutedPeak,
+    mass,
+    scan_ref,
+    DeconvolutedPeakVec,
+    DeconvolutedPeakRef<'t>
+);
 
-    fn parent_id(&self) -> ParentID {
-        *self.scan_ref
-    }
-}
-
-impl SoAIndexSortable<DeconvolutedPeak> for DeconvolutedPeakVec {
-    fn mass(&self) -> &[MassType] {
-        &self.mass
-    }
-
-    fn parent_id(&self) -> &[ParentID] {
-        &self.scan_ref
-    }
-
-    fn convert_ref(val_ref: Self::Ref<'_>) -> DeconvolutedPeak {
-        val_ref.to_owned()
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[soa_derive(Debug, Clone)]
+#[generate_traits]
 pub struct MZPeak {
     pub mz: MassType,
     pub intensity: f32,
     pub scan_ref: ParentID,
-}
-
-impl IndexSortable for MZPeak {
-    fn mass(&self) -> MassType {
-        self.mz
-    }
-
-    fn parent_id(&self) -> ParentID {
-        self.scan_ref
-    }
 }
 
 impl PartialOrd for MZPeak {
@@ -92,7 +57,7 @@ impl PartialOrd for MZPeak {
 }
 
 impl MZPeak {
-    pub fn new(mz: MassType , intensity: f32, scan_ref: ParentID) -> Self {
+    pub fn new(mz: MassType, intensity: f32, scan_ref: ParentID) -> Self {
         Self {
             mz,
             intensity,
@@ -101,13 +66,12 @@ impl MZPeak {
     }
 }
 
-
-
-
+crate::generate_index_sortable!(MZPeak, mz, scan_ref, MZPeakVec, MZPeakRef<'t>);
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::IndexSortable;
 
     #[test]
     fn test_creation() {

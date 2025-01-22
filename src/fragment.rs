@@ -1,7 +1,7 @@
-use std::{str::FromStr, error::Error, fmt::Display};
+use std::{error::Error, fmt::Display, str::FromStr};
 
 #[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use soa_derive::prelude::*;
 
 use crate::sort::{IndexSortable, MassType, ParentID, SoAIndexSortable};
@@ -20,7 +20,7 @@ pub enum FragmentSeries {
     PeptideY,
     Oxonium,
     Internal,
-    Unknown
+    Unknown,
 }
 
 impl FragmentSeries {
@@ -52,8 +52,13 @@ impl Display for FragmentSeriesParsingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match &self {
             Self::Empty => "Fragment name cannot be an empty string".to_string(),
-            Self::UnknownSeries(series_label) => format!("Unknown series label \"{}\"", series_label),
-            Self::InvalidOrdinal(ordinal_label) => format!("Invalid ordinal value \"{}\", should be an integer", ordinal_label),
+            Self::UnknownSeries(series_label) => {
+                format!("Unknown series label \"{}\"", series_label)
+            }
+            Self::InvalidOrdinal(ordinal_label) => format!(
+                "Invalid ordinal value \"{}\", should be an integer",
+                ordinal_label
+            ),
         };
         f.write_str(&text)
     }
@@ -69,7 +74,7 @@ impl FromStr for FragmentSeries {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() == 0 {
-            return Err(FragmentSeriesParsingError::Empty)
+            return Err(FragmentSeriesParsingError::Empty);
         }
         let series = match s {
             "b" => FragmentSeries::b,
@@ -84,7 +89,9 @@ impl FromStr for FragmentSeries {
             "Internal" => FragmentSeries::Internal,
             "Unknown" => FragmentSeries::Unknown,
             _ => {
-                return Err(FragmentSeriesParsingError::UnknownSeries(s[0..1].to_string()))
+                return Err(FragmentSeriesParsingError::UnknownSeries(
+                    s[0..1].to_string(),
+                ))
             }
         };
         Ok(series)
@@ -96,7 +103,7 @@ impl FromStr for FragmentName {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() == 0 {
-            return Err(FragmentSeriesParsingError::Empty)
+            return Err(FragmentSeriesParsingError::Empty);
         }
         let series = match &s[0..1] {
             "b" => FragmentSeries::b,
@@ -106,13 +113,17 @@ impl FromStr for FragmentName {
             "a" => FragmentSeries::a,
             "x" => FragmentSeries::x,
             _ => {
-                return Err(FragmentSeriesParsingError::UnknownSeries(s[0..1].to_string()))
+                return Err(FragmentSeriesParsingError::UnknownSeries(
+                    s[0..1].to_string(),
+                ))
             }
         };
         let ordinal = match s[1..s.len()].parse() {
             Ok(size) => size,
             Err(_) => {
-                return Err(FragmentSeriesParsingError::InvalidOrdinal(s[1..].to_string()))
+                return Err(FragmentSeriesParsingError::InvalidOrdinal(
+                    s[1..].to_string(),
+                ))
             }
         };
         Ok(FragmentName(series, ordinal))
@@ -136,16 +147,7 @@ pub struct Fragment {
     pub ordinal: u16,
 }
 
-
-impl IndexSortable for Fragment {
-    fn mass(&self) -> MassType {
-        self.mass
-    }
-
-    fn parent_id(&self) -> ParentID {
-        self.parent_id
-    }
-}
+crate::generate_index_sortable!(Fragment, mass, parent_id, FragmentVec, FragmentRef<'t>);
 
 impl Fragment {
     pub fn new(mass: MassType, parent_id: ParentID, series: FragmentSeries, ordinal: u16) -> Self {
@@ -155,30 +157,5 @@ impl Fragment {
             series,
             ordinal,
         }
-    }
-}
-
-
-impl<'t> IndexSortable for FragmentRef<'t> {
-    fn mass(&self) -> MassType {
-        *self.mass
-    }
-
-    fn parent_id(&self) -> ParentID {
-        *self.parent_id
-    }
-}
-
-impl SoAIndexSortable<Fragment> for FragmentVec {
-    fn mass(&self) -> &[MassType] {
-        &self.mass
-    }
-
-    fn parent_id(&self) -> &[ParentID] {
-        &self.parent_id
-    }
-
-    fn convert_ref(val_ref: Self::Ref<'_>) -> Fragment {
-        val_ref.to_owned()
     }
 }
