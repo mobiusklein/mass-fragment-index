@@ -682,6 +682,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "identity-hash"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfdd7caa900436d8f13b2346fe10257e0c05c1f1f9e351f4f5d57c03bd5f45da"
+
+[[package]]
 name = "indexmap"
 version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -901,9 +907,9 @@ dependencies = [
 
 [[package]]
 name = "mzdata"
-version = "0.20.0"
+version = "0.48.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25a36e4c2c92bbee276531b0b4e1647f8c8f5c9ae8eca1776e4c5293b92a54f0"
+checksum = "c350ef16226dab046cd9a74e1f46146fbf66afe10bed02e5066ac012e483270b"
 dependencies = [
  "base16ct",
  "base64-simd",
@@ -911,25 +917,23 @@ dependencies = [
  "bytemuck",
  "chrono",
  "flate2",
+ "identity-hash",
  "indexmap",
- "lazy_static",
  "log",
  "md5",
  "mzpeaks",
  "num-traits",
  "quick-xml",
  "regex",
- "serde",
- "serde_json",
  "sha1",
  "thiserror",
 ]
 
 [[package]]
 name = "mzpeaks"
-version = "0.23.0"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0f5a0f2db11aded7a562641db7be9910e4c46b8b7ebf733c430a0652ea2501f"
+checksum = "61c80f7e47ba5ae9c9f94085156573fd9cf7d7e601633f14d68754bb2cebafce"
 dependencies = [
  "num-traits",
 ]
@@ -1375,18 +1379,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.69"
+version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
+checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.69"
+version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
+checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
 dependencies = [
  "proc-macro2",
  "quote",

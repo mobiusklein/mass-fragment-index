@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use std::io;
 use std::iter::FusedIterator;
 
 #[cfg(feature = "serde")]
@@ -181,8 +179,9 @@ impl<T: IndexSortable + Default, P: IndexSortable + Default> SearchIndex<T, P> {
 
 #[cfg(feature = "binary_storage")]
 mod storage {
+    use std::io;
     use crate::storage::{SplitArrowStorage, SplitStorageOptions};
-
+    use std::collections::HashMap;
     use super::*;
 
     impl<
@@ -414,6 +413,8 @@ pub struct SoASearchIndex<
 
 #[cfg(feature = "binary_storage")]
 mod soa_storage {
+    use std::io;
+    use std::collections::HashMap;
     use soa_derive::SoAAppendVec;
 
     use crate::storage::{SplitArrowStorage, SplitStorageOptions};

@@ -1,4 +1,5 @@
 #![cfg(test)]
+#![cfg(feature = "binary_storage")]
 #![allow(unused)]
 
 use std::{fs, io, mem};
