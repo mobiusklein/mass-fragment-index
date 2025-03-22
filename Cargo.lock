@@ -1313,15 +1313,20 @@ checksum = "1b6b67fb9a61334225b5b790716f609cd58395f895b3fe8b328786812a40bc3b"
 
 [[package]]
 name = "soa_derive"
-version = "0.13.0"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47e4eaf24a10828e918ed1e0265de81ad86800f16c6834df8e664b623dec4206"
 dependencies = [
  "permutation",
+ "rustc_version",
  "soa_derive_internal",
 ]
 
 [[package]]
 name = "soa_derive_internal"
-version = "0.13.3"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "039896b91e8c5b22d8acdf2206c72904a83d58d138d10e4bca62c16fdae1b744"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -2,9 +2,9 @@ use std::{error::Error, fmt::Display, str::FromStr};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use soa_derive::prelude::*;
+use soa_derive::*;
 
-use crate::sort::{IndexSortable, MassType, ParentID, SoAIndexSortable};
+use crate::sort::{MassType, ParentID};
 
 #[allow(non_snake_case, non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -139,7 +139,6 @@ impl Default for FragmentSeries {
 #[derive(Debug, Clone, Copy, PartialEq, Default, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[soa_derive(Debug, Clone)]
-#[generate_traits]
 pub struct Fragment {
     pub mass: MassType,
     pub parent_id: ParentID,

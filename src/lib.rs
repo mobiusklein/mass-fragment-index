@@ -12,7 +12,7 @@ pub mod storage;
 
 pub use crate::sort::{IndexSortable, MassType, Tolerance, ToleranceParsingError, ParentID, SoAIndexSortable};
 pub use crate::interval::Interval;
-pub use crate::index::SearchIndex;
+pub use crate::index::{SearchIndex, SoASearchIndex, SearchIndexLike};
 pub use crate::fragment::{Fragment, FragmentSeriesParsingError};
 pub use crate::parent::{ParentMolecule, Peptide, Spectrum};
 pub use crate::peak::{DeconvolutedPeak, MZPeak};

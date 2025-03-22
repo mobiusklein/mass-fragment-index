@@ -134,6 +134,16 @@ pub trait IndexSortable {
     fn parent_id(&self) -> ParentID;
 }
 
+impl<T: IndexSortable> IndexSortable for &T {
+    fn mass(&self) -> MassType {
+        (*self).mass()
+    }
+
+    fn parent_id(&self) -> ParentID {
+        (*self).parent_id()
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct IndexBin<T: IndexSortable> {
@@ -390,7 +400,7 @@ impl<'a, T: IndexSortable> ParentSortedIndexBinSearchIter<'a, T> {
 mod soa_bin {
     use std::{marker::PhantomData, ops::RangeBounds};
 
-    use soa_derive::prelude::*;
+    use soa_derive::*;
 
     use super::*;
 
@@ -692,11 +702,12 @@ mod soa_bin {
 
         pub fn next_entry(&mut self) -> Option<V::Ref<'a>> {
             while let Some(t) = self.bin_iter.next() {
-                if self.spanned && self.parent_range.contains(t.parent_id() as usize) {
+                let parent_id = IndexSortable::parent_id(&t) as usize;
+                if self.spanned && self.parent_range.contains(parent_id) {
                     return Some(t);
                 }
                 if self.error_tolerance.test(self.query, t.mass())
-                    && self.parent_range.contains(t.parent_id() as usize)
+                    && self.parent_range.contains(parent_id)
                 {
                     return Some(t);
                 }

@@ -39,4 +39,4 @@ itertools = "0.13.0"
 rayon = { version = "1.10.0", optional = true}
 log = "0.4.22"
 
-soa_derive = { path = "../soa-derive/soa-derive/", features = ["generic_traits"] }
+soa_derive = { version = "0.14.0" }

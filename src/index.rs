@@ -851,15 +851,267 @@ mod test {
             DeconvolutedPeak::new(303.7, 1, 0.0, 0),
             DeconvolutedPeak::new(501.2, 1, 0.0, 1),
         ];
-        let mut index: SoASearchIndex<
-            DeconvolutedPeak,
-            Spectrum,
-        > = SoASearchIndex::empty(10, 1000.0);
+        let mut index: SoASearchIndex<DeconvolutedPeak, Spectrum> =
+            SoASearchIndex::empty(10, 1000.0);
         for peak in peaks {
             index.add(peak);
         }
 
         let idx = index.bin_for_mass(251.5);
         assert!(idx == 2515);
+    }
+}
+
+pub trait SearchIndexLike<T, P> {
+    type EntryRef<'a>: IndexSortable + 'a
+    where
+        Self: 'a;
+    type ParentRef<'a>: IndexSortable + 'a
+    where
+        Self: 'a;
+    type EntryBinType;
+    type ParentBinType;
+    type SearchIter<'a>: Iterator<Item = Self::EntryRef<'a>>
+    where
+        Self: 'a;
+
+    fn num_bins(&self) -> usize;
+
+    fn num_entries(&self) -> usize;
+
+    fn bins_per_dalton(&self) -> u32;
+
+    fn max_item_mass(&self) -> f32;
+
+    fn sort_type(&self) -> SortType;
+
+    fn total_bins_for_mass(&self) -> u32;
+
+    fn bin_for_mass(&self, mass: MassType) -> usize;
+
+    fn sort(&mut self, ordering: SortType);
+
+    fn add_parent(&mut self, parent_molecule: P);
+
+    fn add(&mut self, entry: T) -> usize;
+
+    fn parents_for(&self, mass: MassType, error_tolerance: Tolerance) -> Interval;
+
+    fn parents_for_range(
+        &self,
+        low: MassType,
+        high: MassType,
+        error_tolerance: Tolerance,
+    ) -> Interval;
+
+    fn parents(&self) -> &Self::ParentBinType;
+
+    fn get_bin(&self, index: usize) -> Option<&Self::EntryBinType>;
+
+    fn get_parent(&self, index: usize) -> Option<Self::ParentRef<'_>>;
+
+    fn search(
+        &self,
+        query: MassType,
+        error_tolerance: Tolerance,
+        parent_interval: Option<Interval>,
+    ) -> Self::SearchIter<'_>;
+}
+
+impl<T: IndexSortable + Default, P: IndexSortable + Default> SearchIndexLike<T, P>
+    for SearchIndex<T, P>
+{
+    type EntryRef<'a>
+        = &'a T
+    where
+        T: 'a,
+        Self: 'a;
+
+    type ParentRef<'a>
+        = &'a P
+    where
+        P: 'a,
+        Self: 'a;
+
+    type EntryBinType = IndexBin<T>;
+    type ParentBinType = IndexBin<P>;
+    type SearchIter<'a>
+        = SearchIndexSearchIter<'a, T, P>
+    where
+        Self: 'a;
+
+    fn num_bins(&self) -> usize {
+        self.num_bins()
+    }
+
+    fn num_entries(&self) -> usize {
+        self.num_entries()
+    }
+
+    fn bins_per_dalton(&self) -> u32 {
+        self.bins_per_dalton
+    }
+
+    fn max_item_mass(&self) -> f32 {
+        self.max_item_mass
+    }
+
+    fn sort_type(&self) -> SortType {
+        self.sort_type
+    }
+
+    fn total_bins_for_mass(&self) -> u32 {
+        self.total_bins_for_mass()
+    }
+
+    fn bin_for_mass(&self, mass: MassType) -> usize {
+        self.bin_for_mass(mass)
+    }
+
+    fn sort(&mut self, ordering: SortType) {
+        self.sort(ordering);
+    }
+
+    fn add_parent(&mut self, parent_molecule: P) {
+        self.add_parent(parent_molecule);
+    }
+
+    fn add(&mut self, entry: T) -> usize {
+        self.add(entry)
+    }
+
+    fn parents_for(&self, mass: MassType, error_tolerance: Tolerance) -> Interval {
+        self.parents_for(mass, error_tolerance)
+    }
+
+    fn parents_for_range(
+        &self,
+        low: MassType,
+        high: MassType,
+        error_tolerance: Tolerance,
+    ) -> Interval {
+        self.parents_for_range(low, high, error_tolerance)
+    }
+    fn search(
+        &self,
+        query: MassType,
+        error_tolerance: Tolerance,
+        parent_interval: Option<Interval>,
+    ) -> Self::SearchIter<'_> {
+        self.search(query, error_tolerance, parent_interval)
+    }
+
+    fn parents(&self) -> &Self::ParentBinType {
+        &self.parents
+    }
+
+    fn get_bin(&self, index: usize) -> Option<&Self::EntryBinType> {
+        self.bins.get(index)
+    }
+
+    fn get_parent(&self, index: usize) -> Option<Self::ParentRef<'_>> {
+        self.parents.get(index)
+    }
+}
+
+impl<
+        T: IndexSortable + Default + StructOfArray,
+        P: IndexSortable + Default + StructOfArray,
+        TV: SoAVec<T> + SoAIndexSortable<T>,
+        PV: SoAVec<P> + SoAIndexSortable<P>,
+    > SearchIndexLike<T, P> for SoASearchIndex<T, P, TV, PV>
+where
+    for<'t> TV::Ref<'t>: IndexSortable,
+    for<'t> PV::Ref<'t>: IndexSortable,
+{
+    type EntryRef<'a>
+        = <TV as SoAVec<T>>::Ref<'a>
+    where
+        Self: 'a;
+
+    type ParentRef<'a>
+        = <PV as SoAVec<P>>::Ref<'a>
+    where
+        Self: 'a;
+
+    type EntryBinType = SoAIndexBin<T, TV>;
+    type ParentBinType = SoAIndexBin<P, PV>;
+    type SearchIter<'a>
+        = SoASearchIndexSearchIter<'a, T, P, TV, PV>
+    where
+        Self: 'a;
+
+    fn num_bins(&self) -> usize {
+        self.num_bins()
+    }
+
+    fn num_entries(&self) -> usize {
+        self.num_entries()
+    }
+
+    fn bins_per_dalton(&self) -> u32 {
+        self.bins_per_dalton()
+    }
+
+    fn max_item_mass(&self) -> f32 {
+        self.max_item_mass()
+    }
+
+    fn sort_type(&self) -> SortType {
+        self.sort_type()
+    }
+
+    fn total_bins_for_mass(&self) -> u32 {
+        self.total_bins_for_mass()
+    }
+
+    fn bin_for_mass(&self, mass: MassType) -> usize {
+        self.bin_for_mass(mass)
+    }
+
+    fn sort(&mut self, ordering: SortType) {
+        self.sort(ordering);
+    }
+
+    fn add_parent(&mut self, parent_molecule: P) {
+        self.add_parent(parent_molecule);
+    }
+
+    fn add(&mut self, entry: T) -> usize {
+        self.add(entry)
+    }
+
+    fn parents_for(&self, mass: MassType, error_tolerance: Tolerance) -> Interval {
+        self.parents_for(mass, error_tolerance)
+    }
+
+    fn parents_for_range(
+        &self,
+        low: MassType,
+        high: MassType,
+        error_tolerance: Tolerance,
+    ) -> Interval {
+        self.parents_for_range(low, high, error_tolerance)
+    }
+
+    fn search(
+        &self,
+        query: MassType,
+        error_tolerance: Tolerance,
+        parent_interval: Option<Interval>,
+    ) -> Self::SearchIter<'_> {
+        self.search(query, error_tolerance, parent_interval)
+    }
+
+    fn parents(&self) -> &Self::ParentBinType {
+        &self.parents
+    }
+
+    fn get_bin(&self, index: usize) -> Option<&Self::EntryBinType> {
+        self.bins.get(index)
+    }
+
+    fn get_parent(&self, index: usize) -> Option<Self::ParentRef<'_>> {
+        self.parents.get(index)
     }
 }

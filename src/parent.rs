@@ -7,7 +7,6 @@ use crate::sort::{MassType, ParentID};
 #[derive(Debug, Clone, Copy, Default, PartialEq, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[soa_derive(Debug, Clone)]
-#[generate_traits]
 pub struct ParentMolecule {
     pub mass: MassType,
     pub id: ParentID,
@@ -45,7 +44,6 @@ crate::generate_index_sortable!(
 #[derive(Debug, Clone, Default, PartialEq, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[soa_derive(Debug, Clone)]
-#[generate_traits]
 pub struct Peptide {
     pub mass: MassType,
     pub id: ParentID,
@@ -77,7 +75,6 @@ crate::generate_index_sortable!(Peptide, mass, protein_id, PeptideVec, PeptideRe
 #[derive(Debug, Clone, Copy, Default, PartialEq, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[soa_derive(Debug, Clone)]
-#[generate_traits]
 pub struct Spectrum {
     pub precursor_mass: MassType,
     pub precursor_charge: i32,

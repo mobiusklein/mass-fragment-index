@@ -7,7 +7,6 @@ use crate::sort::{MassType, ParentID};
 #[derive(Debug, Clone, Copy, PartialEq, Default, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[soa_derive(Debug, Clone)]
-#[generate_traits]
 pub struct DeconvolutedPeak {
     pub mass: MassType,
     pub charge: i16,
@@ -43,7 +42,6 @@ crate::generate_index_sortable!(
 #[derive(Debug, Clone, Copy, PartialEq, Default, StructOfArray)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[soa_derive(Debug, Clone)]
-#[generate_traits]
 pub struct MZPeak {
     pub mz: MassType,
     pub intensity: f32,

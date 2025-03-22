@@ -19,7 +19,7 @@ use parquet::{
     arrow::{arrow_reader::ArrowReaderBuilder, ArrowWriter},
     basic::{Compression, ZstdLevel},
 };
-use soa_derive::prelude::*;
+use soa_derive::*;
 
 use crate::{
     fragment::FragmentVec,
