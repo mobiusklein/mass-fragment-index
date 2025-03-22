@@ -277,7 +277,7 @@ fn test_permuted(
                         );
                         assert!(
                             product_error_tolerance.test(product, frag.mass()),
-                            "{}th hit {} PPM exceeds error tolerance for {:?}",
+                            "{}th hit {} PPM exceeds error tolerance for {:?} {frag:?}",
                             i,
                             (frag.mass() - product).abs() * 1e6 / product,
                             product,
