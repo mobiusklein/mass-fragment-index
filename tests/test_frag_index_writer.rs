@@ -87,11 +87,23 @@ fn test_index_build_traversal() -> io::Result<()> {
     assert_eq!(duplicate_index.num_entries(), search_index.num_entries());
 
     let parent_interval = search_index.parents_for_range(200.0, 1200.0, Tolerance::PPM(10.0));
-    let search: Vec<_> = search_index.search(113.08406397713001, Tolerance::PPM(10.0), Some(parent_interval)).collect();
+    let search: Vec<_> = search_index
+        .search(
+            113.08406397713001,
+            Tolerance::PPM(10.0),
+            Some(parent_interval),
+        )
+        .collect();
     assert_eq!(search.len(), 504);
 
     let parent_interval = duplicate_index.parents_for_range(200.0, 1200.0, Tolerance::PPM(10.0));
-    let dup_search: Vec<_> = duplicate_index.search(113.08406397713001, Tolerance::PPM(10.0), Some(parent_interval)).collect();
+    let dup_search: Vec<_> = duplicate_index
+        .search(
+            113.08406397713001,
+            Tolerance::PPM(10.0),
+            Some(parent_interval),
+        )
+        .collect();
     assert_eq!(dup_search.len(), 504);
 
     Ok(())

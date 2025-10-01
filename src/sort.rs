@@ -1,5 +1,9 @@
 use std::{
-    error::Error, fmt::Display, iter::FusedIterator, ops::{Index, Mul}, str::FromStr
+    error::Error,
+    fmt::Display,
+    iter::FusedIterator,
+    ops::{Index, Mul},
+    str::FromStr,
 };
 
 #[cfg(feature = "serde")]
@@ -211,12 +215,12 @@ impl<T: IndexSortable> IndexBin<T> {
         self.entries.is_empty()
     }
 
-    pub fn iter(&self) -> std::slice::Iter<T> {
+    pub fn iter(&self) -> std::slice::Iter<'_, T> {
         self.entries.iter()
     }
 
     #[allow(unused)]
-    pub(crate) fn iter_mut(&mut self) -> std::slice::IterMut<T> {
+    pub(crate) fn iter_mut(&mut self) -> std::slice::IterMut<'_, T> {
         self.entries.iter_mut()
     }
 
@@ -405,7 +409,6 @@ impl<'a, T: IndexSortable> ParentSortedIndexBinSearchIter<'a, T> {
         None
     }
 }
-
 
 #[cfg(test)]
 mod test {

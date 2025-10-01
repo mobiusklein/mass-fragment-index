@@ -26,8 +26,8 @@ use crate::sort::IndexBin;
 use crate::sort::SortType;
 use crate::{parent::Spectrum, peak::DeconvolutedPeak};
 
-use super::{ArrowStorage, SplitArrowStorage};
 use super::util::{afield, as_array_ref, field_of};
+use super::{ArrowStorage, SplitArrowStorage};
 
 pub fn make_peak_schema() -> Arc<Schema> {
     let mass = afield!("mass", DataType::Float32);
@@ -140,7 +140,7 @@ impl ArrowStorage for DeconvolutedPeak {
         batch: &'a RecordBatch,
         _schema: arrow::datatypes::SchemaRef,
     ) -> impl Iterator<Item = (Self, u64)> + 'a {
-         let mass = field_of!(batch, "mass")
+        let mass = field_of!(batch, "mass")
             .as_any()
             .downcast_ref::<Float32Array>()
             .unwrap();
@@ -169,7 +169,7 @@ impl ArrowStorage for DeconvolutedPeak {
                     scan_ref.unwrap(),
                 );
                 (peak, segment_id.unwrap())
-            }
+            },
         )
     }
 
@@ -198,11 +198,15 @@ impl ArrowStorage for Spectrum {
     }
 
     fn mass_column() -> Option<usize> {
-        Self::schema().column_with_name("precursor_mass").map(|(i, _)| i)
+        Self::schema()
+            .column_with_name("precursor_mass")
+            .map(|(i, _)| i)
     }
 
     fn parent_id_column() -> Option<usize> {
-        Self::schema().column_with_name("source_file_id").map(|(i, _)| i)
+        Self::schema()
+            .column_with_name("source_file_id")
+            .map(|(i, _)| i)
     }
 
     fn sort_id_column() -> Option<usize> {
@@ -262,8 +266,10 @@ impl ArrowStorage for Spectrum {
     }
 
     fn writer_properties() -> WriterPropertiesBuilder {
-        WriterProperties::builder()
-            .set_column_encoding("precursor_mass".into(), parquet::basic::Encoding::BYTE_STREAM_SPLIT)
+        WriterProperties::builder().set_column_encoding(
+            "precursor_mass".into(),
+            parquet::basic::Encoding::BYTE_STREAM_SPLIT,
+        )
     }
 }
 
@@ -460,7 +466,6 @@ pub fn read_peak_index<P: AsRef<Path>>(
     index.sort(SortType::ByParentId);
     Ok(index)
 }
-
 
 impl SplitArrowStorage for DeconvolutedPeak {}
 impl SplitArrowStorage for Spectrum {}

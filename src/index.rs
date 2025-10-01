@@ -164,7 +164,7 @@ impl<T: IndexSortable + Default, P: IndexSortable + Default> SearchIndex<T, P> {
 
 #[cfg(feature = "binary_storage")]
 mod storage {
-    use crate::storage::{SplitStorageOptions, SplitArrowStorage};
+    use crate::storage::{SplitArrowStorage, SplitStorageOptions};
 
     use super::*;
 

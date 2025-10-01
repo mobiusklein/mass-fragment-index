@@ -29,7 +29,7 @@ use parquet::basic::Compression;
 use parquet::basic::ZstdLevel;
 use parquet::{arrow::ArrowWriter, file::properties::*};
 
-use super::util::{ArrowStorage, afield, as_array_ref, field_of};
+use super::util::{afield, as_array_ref, field_of, ArrowStorage};
 use super::SplitArrowStorage;
 use crate::index::SearchIndex;
 use crate::sort::IndexBin;
@@ -83,14 +83,19 @@ impl ArrowStorage for Peptide {
     }
 
     fn parent_id_column() -> Option<usize> {
-        Self::schema().column_with_name("protein_id").map(|(i, field)| i)
+        Self::schema()
+            .column_with_name("protein_id")
+            .map(|(i, field)| i)
     }
 
     fn sort_id_column() -> Option<usize> {
         Self::schema().column_with_name("id").map(|(i, field)| i)
     }
 
-    fn from_batch<'a>(batch: &'a RecordBatch, schema: SchemaRef) -> impl Iterator<Item=(Self, u64)> + 'a {
+    fn from_batch<'a>(
+        batch: &'a RecordBatch,
+        schema: SchemaRef,
+    ) -> impl Iterator<Item = (Self, u64)> + 'a {
         let mass = batch
             .column_by_name("mass")
             .unwrap()
@@ -104,9 +109,12 @@ impl ArrowStorage for Peptide {
             .unwrap()
             .as_primitive::<UInt32Type>();
         let sequence = batch.column_by_name("sequence").unwrap().as_string::<i32>();
-        let id = batch.column_by_name("id").unwrap().as_primitive::<UInt32Type>();
-        izip!(mass, start_position, protein_id, sequence, id)
-            .map(|(mass, start_position, protein_id, sequence, id)| {
+        let id = batch
+            .column_by_name("id")
+            .unwrap()
+            .as_primitive::<UInt32Type>();
+        izip!(mass, start_position, protein_id, sequence, id).map(
+            |(mass, start_position, protein_id, sequence, id)| {
                 (
                     Peptide::new(
                         mass.unwrap(),
@@ -115,12 +123,17 @@ impl ArrowStorage for Peptide {
                         start_position.unwrap(),
                         sequence.unwrap().to_string(),
                     ),
-                    0
+                    0,
                 )
-            })
+            },
+        )
     }
 
-    fn to_batch(batch: &[Self], schema: SchemaRef, segment_id: u64) -> Result<RecordBatch, arrow::error::ArrowError> {
+    fn to_batch(
+        batch: &[Self],
+        schema: SchemaRef,
+        segment_id: u64,
+    ) -> Result<RecordBatch, arrow::error::ArrowError> {
         peptide_to_arrow(batch, schema)
     }
 
@@ -144,18 +157,27 @@ impl ArrowStorage for Fragment {
     }
 
     fn parent_id_column() -> Option<usize> {
-        Self::schema().column_with_name("parent_id").map(|(i, field)| i)
+        Self::schema()
+            .column_with_name("parent_id")
+            .map(|(i, field)| i)
     }
 
     fn archive_name() -> String {
         "fragments.parquet".into()
     }
 
-    fn to_batch(batch: &[Self], schema: SchemaRef, segment_id: u64) -> Result<RecordBatch, arrow::error::ArrowError> {
+    fn to_batch(
+        batch: &[Self],
+        schema: SchemaRef,
+        segment_id: u64,
+    ) -> Result<RecordBatch, arrow::error::ArrowError> {
         fragment_to_arrow(batch, schema, segment_id)
     }
 
-    fn from_batch<'a>(batch: &'a RecordBatch, schema: SchemaRef) -> impl Iterator<Item=(Self, u64)> + 'a {
+    fn from_batch<'a>(
+        batch: &'a RecordBatch,
+        schema: SchemaRef,
+    ) -> impl Iterator<Item = (Self, u64)> + 'a {
         let mass = field_of!(batch, "mass")
             .as_any()
             .downcast_ref::<Float32Array>()
@@ -186,7 +208,7 @@ impl ArrowStorage for Fragment {
                     ordinal.unwrap() as u16,
                 );
                 (peak, segment_id.unwrap())
-            }
+            },
         )
     }
 
@@ -261,7 +283,7 @@ pub fn fragment_to_arrow(
 pub fn write_fragment_index<P: AsRef<Path>>(
     index: &SearchIndex<Fragment, Peptide>,
     directory: &P,
-    compression_level: Option<Compression>
+    compression_level: Option<Compression>,
 ) -> io::Result<()> {
     let peptides_path = directory.as_ref().join("peptides.parquet");
     let fragments_path = directory.as_ref().join("fragments.parquet");
@@ -269,7 +291,8 @@ pub fn write_fragment_index<P: AsRef<Path>>(
 
     let peptides_fh = fs::File::create(peptides_path)?;
     let peptides_schema = make_peptide_schema();
-    let compression = compression_level.unwrap_or(Compression::ZSTD(ZstdLevel::try_new(20).unwrap()));
+    let compression =
+        compression_level.unwrap_or(Compression::ZSTD(ZstdLevel::try_new(20).unwrap()));
 
     {
         let props = WriterProperties::builder()
@@ -450,7 +473,6 @@ pub fn read_fragment_index<P: AsRef<Path>>(
     index.sort(SortType::ByParentId);
     Ok(index)
 }
-
 
 impl SplitArrowStorage for Fragment {}
 impl SplitArrowStorage for Peptide {}

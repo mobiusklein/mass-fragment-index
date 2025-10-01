@@ -10,7 +10,7 @@ use rayon::prelude::*;
 use mass_fragment_index::fragment::{Fragment, FragmentName};
 use mass_fragment_index::index::SearchIndex;
 use mass_fragment_index::parent::Peptide;
-use mass_fragment_index::sort::{MassType, Tolerance, IndexSortable, ParentID, SortType};
+use mass_fragment_index::sort::{IndexSortable, MassType, ParentID, SortType, Tolerance};
 
 fn parse_csv<R: io::BufRead>(reader: R) -> io::Result<Vec<(Peptide, Vec<Fragment>)>> {
     let mut csv_reader = csv::Reader::from_reader(reader);
@@ -92,7 +92,7 @@ fn test_exact(
         // }
     };
 
-    it.for_each(|(pept, frags)|{
+    it.for_each(|(pept, frags)| {
         let parent_interval = search_index.parents_for(pept.mass, precursor_error_tolerance);
         for i in parent_interval {
             assert!(parent_interval.contains(i));
@@ -110,31 +110,21 @@ fn test_exact(
 
         let n_expected_parents = entries
             .iter()
-            .filter(|(alt_pept, _)| {
-                precursor_error_tolerance.test(alt_pept.mass, pept.mass)
-            })
+            .filter(|(alt_pept, _)| precursor_error_tolerance.test(alt_pept.mass, pept.mass))
             .count();
 
         let expected_parents: Vec<_> = entries
             .iter()
             .map(|(alt_pept, _)| alt_pept)
-            .filter(|alt_pept| {
-                precursor_error_tolerance.test(alt_pept.mass, pept.mass)
-            })
+            .filter(|alt_pept| precursor_error_tolerance.test(alt_pept.mass, pept.mass))
             .collect();
 
         let n_parents = parent_interval.clone().into_iter().count();
 
         assert_eq!(
-            n_expected_parents,
-            n_parents,
+            n_expected_parents, n_parents,
             "Expected {} parent matches, found {} for query {}: {:?}/{:?}/{:?}",
-            n_expected_parents,
-            n_parents,
-            pept.mass,
-            parent_interval,
-            pept,
-            expected_parents
+            n_expected_parents, n_parents, pept.mass, parent_interval, pept, expected_parents
         );
 
         for expected_frag in frags.iter() {
@@ -144,40 +134,37 @@ fn test_exact(
                 Some(parent_interval),
             );
 
-            let n_frags =
-                search_iter
-                    .enumerate()
-                    .map(|(i, frag)| {
-                        assert!(
-                            parent_interval.contains(frag.parent_id as usize),
-                            "{}th hit {:?} did not fall within parent interval {:?} {:?} of batch {}",
-                            i,
-                            frag,
-                            parent_interval,
-                            expected_frag,
-                            pept.id,
-                        );
-                        assert!(
-                            product_error_tolerance.test(frag.mass, expected_frag.mass),
-                            "{}th {:?} did not fall within mass error tolerance for {:?} {}",
-                            i,
-                            frag,
-                            expected_frag,
-                            (frag.mass - expected_frag.mass).abs() / frag.mass * 1e6,
-                        );
-                        frag
-                    })
-                    .count();
+            let n_frags = search_iter
+                .enumerate()
+                .map(|(i, frag)| {
+                    assert!(
+                        parent_interval.contains(frag.parent_id as usize),
+                        "{}th hit {:?} did not fall within parent interval {:?} {:?} of batch {}",
+                        i,
+                        frag,
+                        parent_interval,
+                        expected_frag,
+                        pept.id,
+                    );
+                    assert!(
+                        product_error_tolerance.test(frag.mass, expected_frag.mass),
+                        "{}th {:?} did not fall within mass error tolerance for {:?} {}",
+                        i,
+                        frag,
+                        expected_frag,
+                        (frag.mass - expected_frag.mass).abs() / frag.mass * 1e6,
+                    );
+                    frag
+                })
+                .count();
 
             let n_expected_frags = entries
                 .iter()
-                .filter(|(alt_pept, _)| {
-                    precursor_error_tolerance.test(alt_pept.mass, pept.mass)
-                })
+                .filter(|(alt_pept, _)| precursor_error_tolerance.test(alt_pept.mass, pept.mass))
                 .map(|(_, frags)| {
-                    frags.iter().filter(|frag| {
-                        product_error_tolerance.test(frag.mass, expected_frag.mass)
-                    })
+                    frags
+                        .iter()
+                        .filter(|frag| product_error_tolerance.test(frag.mass, expected_frag.mass))
                 })
                 .flatten()
                 .count();
@@ -333,7 +320,12 @@ fn test_index_build_traversal() -> io::Result<()> {
     ));
 
     (0..5).into_iter().for_each(|_| {
-        assert!(test_permuted(&search_index, &entries, precursor_error_tolerance, product_error_tolerance));
+        assert!(test_permuted(
+            &search_index,
+            &entries,
+            precursor_error_tolerance,
+            product_error_tolerance
+        ));
     });
 
     Ok(())

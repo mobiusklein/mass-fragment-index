@@ -1,9 +1,8 @@
-use std::ops::Range;
 use std::iter::IntoIterator;
+use std::ops::Range;
 
 #[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -34,10 +33,12 @@ impl Interval {
     }
 }
 
-
 impl Into<Range<usize>> for Interval {
     fn into(self) -> Range<usize> {
-        Range { start: self.start, end: self.end}
+        Range {
+            start: self.start,
+            end: self.end,
+        }
     }
 }
 
@@ -53,7 +54,6 @@ impl From<Interval> for (usize, usize) {
     }
 }
 
-
 impl IntoIterator for Interval {
     type Item = usize;
 
@@ -64,7 +64,6 @@ impl IntoIterator for Interval {
         range.into_iter()
     }
 }
-
 
 #[cfg(test)]
 mod test {

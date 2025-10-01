@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    fs, io,
-    path::Path,
-    sync::Arc,
-};
+use std::{collections::HashMap, fs, io, path::Path, sync::Arc};
 
 use arrow::{
     array::{ArrayRef, AsArray, Float32Array, RecordBatch, UInt32Array},
@@ -169,7 +164,11 @@ pub trait IndexBinaryStorage<'a, T: ArrowStorage + 'a, P: ArrowStorage, M: Arrow
         Ok(())
     }
 
-    fn write_entries(&'a self, directory: &Path, compression_level: &Compression) -> io::Result<()> {
+    fn write_entries(
+        &'a self,
+        directory: &Path,
+        compression_level: &Compression,
+    ) -> io::Result<()> {
         let entries_path = directory.join(T::archive_name());
         let entries_schema = T::schema();
         let props = T::writer_properties()

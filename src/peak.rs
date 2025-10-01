@@ -1,8 +1,7 @@
 #[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::sort::{IndexSortable, ParentID, MassType};
-
+use crate::sort::{IndexSortable, MassType, ParentID};
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -40,7 +39,6 @@ impl DeconvolutedPeak {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MZPeak {
@@ -66,7 +64,7 @@ impl PartialOrd for MZPeak {
 }
 
 impl MZPeak {
-    pub fn new(mz: MassType , intensity: f32, scan_ref: ParentID) -> Self {
+    pub fn new(mz: MassType, intensity: f32, scan_ref: ParentID) -> Self {
         Self {
             mz,
             intensity,
@@ -74,10 +72,6 @@ impl MZPeak {
         }
     }
 }
-
-
-
-
 
 #[cfg(test)]
 mod test {

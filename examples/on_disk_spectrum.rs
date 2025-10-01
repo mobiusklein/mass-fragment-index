@@ -1,10 +1,9 @@
 use std::{env, io, path::PathBuf};
 
 use mass_fragment_index::{
-    storage::{IndexMetadata, SearchIndexOnDisk}, DeconvolutedPeak, Spectrum
-
+    storage::{IndexMetadata, SearchIndexOnDisk},
+    DeconvolutedPeak, Spectrum,
 };
-
 
 fn main() -> io::Result<()> {
     pretty_env_logger::init_timed();
@@ -13,9 +12,11 @@ fn main() -> io::Result<()> {
 
     let storage_dir: PathBuf = args
         .next()
-        .unwrap_or_else(|| panic!("Please provide a path to read index from")).into();
+        .unwrap_or_else(|| panic!("Please provide a path to read index from"))
+        .into();
 
-    let index: SearchIndexOnDisk<DeconvolutedPeak, Spectrum, IndexMetadata> = SearchIndexOnDisk::new(storage_dir)?;
+    let index: SearchIndexOnDisk<DeconvolutedPeak, Spectrum, IndexMetadata> =
+        SearchIndexOnDisk::new(storage_dir)?;
 
     let iv = index.parents_for_range(1200.0, 2300.0, mass_fragment_index::Tolerance::Da(0.2));
     eprintln!("{iv:?}");

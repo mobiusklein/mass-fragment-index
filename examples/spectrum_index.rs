@@ -3,7 +3,8 @@ use std::{env, io, path::PathBuf};
 use mzdata::{io::DetailLevel, prelude::*, MzMLReader};
 
 use mass_fragment_index::{
-    sort::SortType, storage::SplitStorageOptions, DeconvolutedPeak, DeconvolutedSpectrumIndex, Spectrum
+    sort::SortType, storage::SplitStorageOptions, DeconvolutedPeak, DeconvolutedSpectrumIndex,
+    Spectrum,
 };
 
 fn main() -> io::Result<()> {
@@ -17,10 +18,13 @@ fn main() -> io::Result<()> {
 
     let storage_dir: PathBuf = args
         .next()
-        .unwrap_or_else(|| panic!("Please provide a path to write index to")).into();
+        .unwrap_or_else(|| panic!("Please provide a path to write index to"))
+        .into();
 
     if !storage_dir.exists() {
-        std::fs::DirBuilder::new().recursive(true).create(&storage_dir)?;
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .create(&storage_dir)?;
     }
 
     let mut reader = MzMLReader::open_path(mzml_path)?;
@@ -97,7 +101,11 @@ fn main() -> io::Result<()> {
     // let duplicate = DeconvolutedSpectrumIndex::read_parquet(&storage_dir)?;
     let duplicate = DeconvolutedSpectrumIndex::read_banded_parquet(&storage_dir)?;
 
-    eprintln!("Original index: {} precursors. Loaded index: {} precursors", index.parents.len(), duplicate.parents.len());
+    eprintln!(
+        "Original index: {} precursors. Loaded index: {} precursors",
+        index.parents.len(),
+        duplicate.parents.len()
+    );
     for (p1, p2) in index.parents.iter().zip(duplicate.parents.iter()) {
         assert_eq!(p1, p2);
     }
